@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="高爾夫比洞賽">
+<title>高爾夫比洞賽計分</title>
+<style>
+  :root {
+    --green: #1a6b3a;
+    --green-light: #2d8a50;
+    --green-pale: #e8f5ed;
+    --gold: #c8971a;
+    --gold-light: #f0c040;
+    --bg: #f4f6f2;
+    --card: #ffffff;
+    --text: #1a2a1a;
+    --muted: #6b7c6b;
+    --border: #d0ddd0;
+    --red: #c0392b;
+    --blue: #1565c0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.10);
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; max-width: 430px; margin: 0 auto; }
+  
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+  
+  .topbar {
+    background: var(--green);
+    color: #fff;
+    padding: calc(var(--safe-top) + 14px) 16px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; flex: 1; }
+  .topbar .back { font-size: 24px; cursor: pointer; padding: 0 4px; }
+  .topbar .action { font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; cursor: pointer; border: none; color: #fff; }
+
+  .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: calc(var(--safe-bot) + 80px); }
+
+  .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .card-title { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; text-align: center; }
+  .btn-primary { background: var(--green); color: #fff; }
+  .btn-secondary { background: var(--green-pale); color: var(--green); border: 1.5px solid var(--green); }
+  .btn-danger { background: #fdecea; color: var(--red); }
+  .btn-gold { background: var(--gold); color: #fff; }
+  .btn + .btn { margin-top: 10px; }
+  .btn:active { opacity: 0.8; transform: scale(0.98); }
+
+  .input-group { margin-bottom: 14px; }
+  .input-group label { font-size: 13px; color: var(--muted); font-weight: 600; display: block; margin-bottom: 6px; }
+  .input-group input, .input-group select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 16px; background: var(--bg); color: var(--text); appearance: none;
+  }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--green); background: #fff; }
+
+  .list-item {
+    display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item-main { flex: 1; }
+  .list-item-title { font-size: 16px; font-weight: 600; }
+  .list-item-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .list-item-action { color: var(--muted); font-size: 20px; }
+  .list-item-badge { background: var(--green-pale); color: var(--green); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 20px; margin-right: 8px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .badge-green { background: var(--green-pale); color: var(--green); }
+  .badge-gold { background: #fef9e7; color: var(--gold); }
+  .badge-red { background: #fdecea; color: var(--red); }
+  .badge-blue { background: #e3f2fd; color: var(--blue); }
+
+  /* Home screen */
+  .home-logo { text-align: center; padding: 40px 0 20px; }
+  .home-logo .icon { font-size: 64px; margin-bottom: 8px; }
+  .home-logo h1 { font-size: 26px; font-weight: 800; color: var(--green); }
+  .home-logo p { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .home-menu-item {
+    display: flex; align-items: center; gap: 14px; padding: 16px;
+    background: var(--card); border-radius: var(--radius); margin-bottom: 10px;
+    box-shadow: var(--shadow); cursor: pointer;
+  }
+  .home-menu-item:active { transform: scale(0.98); }
+  .home-menu-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .home-menu-text h3 { font-size: 16px; font-weight: 700; }
+  .home-menu-text p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* Scoring */
+  .hole-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--green); color: #fff; }
+  .hole-nav .hole-info { text-align: center; }
+  .hole-nav .hole-num { font-size: 24px; font-weight: 800; }
+  .hole-nav .hole-detail { font-size: 12px; opacity: 0.85; }
+  .hole-nav .nav-btn { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .hole-nav .nav-btn:active { background: rgba(255,255,255,0.4); }
+
+  .score-player { background: var(--card); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .score-player-header { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }
+  .player-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .score-player-name { font-size: 16px; font-weight: 700; flex: 1; }
+  .score-player-hcp { font-size: 12px; color: var(--muted); }
+
+  .stroke-control { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: 10px; padding: 8px 14px; }
+  .stroke-control label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .stroke-btns { display: flex; align-items: center; gap: 12px; }
+  .stroke-btn { width: 36px; height: 36px; border-radius: 50%; border: none; font-size: 22px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--green); color: #fff; }
+  .stroke-btn.minus { background: var(--border); color: var(--text); }
+  .stroke-btn:active { transform: scale(0.92); }
+  .stroke-val { font-size: 26px; font-weight: 800; min-width: 36px; text-align: center; }
+
+  .result-bar { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .result-chip { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+  .result-chip.selected-win { background: var(--green); color: #fff; }
+  .result-chip.selected-loss { background: var(--red); color: #fff; }
+  .result-chip.selected-tie { background: var(--gold); color: #fff; }
+  .result-chip.neutral { background: var(--bg); color: var(--muted); border-color: var(--border); }
+
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .label { font-size: 14px; color: var(--muted); }
+  .summary-row .val { font-size: 15px; font-weight: 700; }
+  .val.pos { color: var(--green); }
+  .val.neg { color: var(--red); }
+  .val.neu { color: var(--muted); }
+
+  /* Scorecard table */
+  .sc-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: -4px -4px; }
+  .sc-table { border-collapse: collapse; width: max-content; min-width: 100%; }
+  .sc-table th, .sc-table td { padding: 8px 10px; text-align: center; font-size: 13px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .sc-table th { background: var(--green); color: #fff; font-weight: 700; font-size: 12px; }
+  .sc-table tr:nth-child(even) td { background: #f7faf7; }
+  .sc-table .col-hole { font-weight: 700; background: var(--green-pale); color: var(--green); }
+  .sc-table .birdie { color: var(--blue); font-weight: 700; }
+  .sc-table .eagle { color: var(--gold); font-weight: 800; }
+  .sc-table .bogey { color: var(--red); }
+  .sc-table .par { color: var(--muted); }
+  .sc-table .win { color: var(--green); font-weight: 700; }
+  .sc-table .loss { color: var(--red); font-weight: 700; }
+
+  /* Player stats */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box { background: var(--bg); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-box .sv { font-size: 22px; font-weight: 800; }
+  .stat-box .sl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: var(--card); border-radius: 20px 20px 0 0; padding: 20px 20px calc(var(--safe-bot) + 20px); width: 100%; max-height: 85vh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+  .modal-close { float: right; font-size: 24px; color: var(--muted); cursor: pointer; line-height: 1; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: calc(var(--safe-bot) + 20px); left: 50%; transform: translateX(-50%) translateY(80px); background: #1a2a1a; color: #fff; padding: 12px 20px; border-radius: 25px; font-size: 14px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 200; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .tabs { display: flex; background: var(--bg); border-radius: 12px; padding: 3px; margin-bottom: 14px; }
+  .tab { flex: 1; padding: 8px; border: none; background: none; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .tab.active { background: #fff; color: var(--green); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .tag { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--green-pale); color: var(--green); }
+  .tag.deselected { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+  .amount-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .amount-btn { padding: 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-weight: 700; background: var(--bg); color: var(--text); cursor: pointer; text-align: center; }
+  .amount-btn.selected { border-color: var(--green); background: var(--green-pale); color: var(--green); }
+  .amount-btn:active { opacity: 0.8; }
+
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--gold-light); border-radius: 2px; transition: width 0.3s; }
+
+  .handicap-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; }
+  .empty-state .ei { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { color: var(--muted); font-size: 15px; }
+
+  .section-divider { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 0 6px; }
+
+  .player-hcp-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .player-hcp-row:last-child { border-bottom: none; }
+  .player-hcp-row .pname { font-size: 15px; font-weight: 600; flex: 1; }
+  .player-hcp-row .hval { font-size: 20px; font-weight: 800; color: var(--green); min-width: 36px; text-align: center; }
+  .player-hcp-row .hbtn { width: 32px; height: 32px; border-radius: 50%; border: none; font-size: 18px; cursor: pointer; background: var(--green-pale); color: var(--green); display: flex; align-items: center; justify-content: center; }
+
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1a0f; --card: #1a2a1a; --text: #e8f0e8; --muted: #8aaa8a; --border: #2a3a2a; --green-pale: #1a3020; }
+    .home-logo h1 { color: #4caf70; }
+    .sc-table tr:nth-child(even) td { background: #1f2f1f; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="topbar">
+    <div style="font-size:28px">⛳</div>
+    <h1>高爾夫比洞賽</h1>
+    <div style="font-size:12px;opacity:0.7">Taiwan</div>
+  </div>
+  <div class="content">
+    <div class="home-logo">
+      <div class="icon">🏌️</div>
+      <h1>比洞賽計分</h1>
+      <p>Match Play · 賭資計算</p>
+    </div>
+    <div class="home-menu-item" onclick="showScreen('screen-newgame')">
+      <div class="home-menu-icon" style="background:#e8f5ed">🎯</div>
+      <div class="home-menu-text"><h3>開新局</h3><p>選球場、選球員、設定賭金</p></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+    <div class="home-menu-item" onclick="showScreen('screen-history')">
+      <div class="home-menu-icon" style="background:#fef9e7">📊</div>
+      <div class="home-menu-text"><h3>歷史紀錄</h3><p>查詢過往賽局及統計</p></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+    <div class="home-menu-item" onclick="showScreen('screen-players')">
+      <div class="home-menu-icon" style="background:#e3f2fd">👤</div>
+      <div class="home-menu-text"><h3>球員管理</h3><p>新增球員、查看差點</p></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+    <div class="home-menu-item" onclick="showScreen('screen-courses')">
+      <div class="home-menu-icon" style="background:#fdecea">🗺️</div>
+      <div class="home-menu-text"><h3>球場資料庫</h3><p>台灣球場計分卡</p></div>
+      <div style="color:var(--muted)">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW GAME -->
+<div id="screen-newgame" class="screen">
+  <div class="topbar">
+    <span class="back" onclick="showScreen('screen-home')">‹</span>
+    <h1>開新局</h1>
+    <button class="action" onclick="startGame()">開始</button>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div class="card-title">選擇球場</div>
+      <div class="input-group" style="margin:0">
+        <select id="sel-course" onchange="onCourseChange()">
+          <option value="">請選擇球場...</option>
+        </select>
+      </div>
+      <div id="course-info" style="display:none;margin-top:12px">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">球場資訊</div>
+        <div id="course-info-text" style="font-size:14px;line-height:1.6"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">選擇球員 (2-4人)</div>
+      <div id="player-select-list"></div>
+    </div>
+
+    <div class="card" id="hcp-setup-card" style="display:none">
+      <div class="card-title">差點設定 & 比賽配對</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">設定讓洞數，可選擇「不比」跳過該對組合</div>
+      <div id="hcp-matrix"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">每點金額（元）</div>
+      <div class="amount-picker" id="amount-picker">
+        <div class="amount-btn selected" data-v="50" onclick="pickAmount(this)">50元</div>
+        <div class="amount-btn" data-v="100" onclick="pickAmount(this)">100元</div>
+        <div class="amount-btn" data-v="200" onclick="pickAmount(this)">200元</div>
+        <div class="amount-btn" data-v="500" onclick="pickAmount(this)">500元</div>
+      </div>
+      <div style="margin-top:10px" class="input-group">
+        <label>自訂金額</label>
+        <input type="number" id="custom-amount" placeholder="輸入金額" inputmode="numeric">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORING -->
+<div id="screen-scoring" class="screen">
+  <div class="hole-nav">
+    <button class="nav-btn" onclick="prevHole()">‹</button>
+    <div class="hole-info">
+      <div class="hole-num" id="hn-num">第 1 洞</div>
+      <div class="hole-detail" id="hn-detail">Par 4 · HCP 1</div>
+      <div class="progress-bar"><div class="progress-fill" id="hn-progress"></div></div>
+    </div>
+    <button class="nav-btn" onclick="nextHole()">›</button>
+  </div>
+  <div id="score-players-area" class="content" style="padding-top:10px"></div>
+  <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;padding-bottom:calc(var(--safe-bot)+12px);display:flex;gap:8px;z-index:50">
+    <button class="btn btn-secondary" style="flex:1;padding:12px" onclick="showScorecard()">📋 計分卡</button>
+    <button class="btn btn-primary" style="flex:1;padding:12px" onclick="nextHole()">下一洞 ›</button>
+  </div>
+</div>
+
+<!-- SCORECARD FULL -->
+<div id="screen-scorecard" class="screen">
+  <div class="topbar">
+    <span class="back" onclick="showScreen('screen-scoring')">‹</span>
+    <h1>完整計分卡</h1>
+    <button class="action" onclick="endGame()">結束賽局</button>
+  </div>
+  <div class="content" style="padding:8px">
+    <div id="sc-totals-area" class="card" style="margin-bottom:10px"></div>
+    <div class="card" style="padding:8px">
+      <div class="sc-wrap">
+        <table class="sc-table" id="sc-main-table"><tbody></tbody></table>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="confirmDiscard()" style="margin-top:4px">🗑️ 放棄此局不儲存</button>
+  </div>
+</div>
+
+<!-- GAME RESULT -->
+<div id="screen-result" class="screen">
+  <div class="topbar">
+    <h1>🏆 賽局結果</h1>
+    <button class="action" onclick="saveAndHome()">儲存並回首頁</button>
+  </div>
+  <div class="content">
+    <div id="result-players"></div>
+    <div class="card">
+      <div class="card-title">差點調整</div>
+      <div id="result-hcp-adj"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px">原則：每對之間，勝方每3點差調整1洞差點</div>
+    </div>
+    <div class="card">
+      <div class="card-title">賽局日期</div>
+      <div id="result-date" style="font-size:15px;font-weight:600"></div>
+    </div>
+    <button class="btn btn-danger" onclick="confirmDiscard()" style="margin-top:4px">🗑️ 放棄不儲存</button>
+  </div>
+</div>
+
+<!-- PLAYERS MANAGEMENT -->
+<div id="screen-players" class="screen">
+  <div class="topbar">
+    <span class="back" onclick="showScreen('screen-home')">‹</span>
+    <h1>球員管理</h1>
+    <button class="action" onclick="openAddPlayer()">+ 新增</button>
+  </div>
+  <div class="content">
+    <div id="players-list"></div>
+  </div>
+</div>
+
+<!-- COURSES -->
+<div id="screen-courses" class="screen">
+  <div class="topbar">
+    <span class="back" onclick="showScreen('screen-home')">‹</span>
+    <h1>球場資料庫</h1>
+    <button class="action" onclick="openAddCourse()">+ 新增</button>
+  </div>
+  <div class="content">
+    <div id="courses-list"></div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="screen-history" class="screen">
+  <div class="topbar">
+    <span class="back" onclick="showScreen('screen-home')">‹</span>
+    <h1>歷史紀錄</h1>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <button class="tab active" onclick="histTab('rounds',this)">賽局記錄</button>
+      <button class="tab" onclick="histTab('stats',this)">球員統計</button>
+    </div>
+    <div id="hist-rounds"></div>
+    <div id="hist-stats" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-player" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">球員資料 <span class="modal-close" onclick="closeModal('modal-player')">×</span></div>
+    <div class="input-group"><label>球員姓名</label><input id="pl-name" type="text" placeholder="請輸入姓名"></div>
+    <div class="card-title" style="margin-top:4px;margin-bottom:8px">對各球員讓洞差點（正數=讓對方）</div>
+    <div id="pl-hcp-matrix"></div>
+    <input type="hidden" id="pl-id">
+    <button class="btn btn-primary" style="margin-top:14px" onclick="savePlayer()">儲存</button>
+    <button class="btn btn-danger" id="del-player-btn" onclick="deletePlayer()" style="display:none;margin-top:8px">刪除球員</button>
+  </div>
+</div>
+
+<div id="modal-course" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">球場資料 <span class="modal-close" onclick="closeModal('modal-course')">×</span></div>
+    <div class="input-group"><label>球場名稱</label><input id="co-name" type="text" placeholder="例：台北球場"></div>
+    <div class="input-group"><label>地區</label><input id="co-region" type="text" placeholder="例：台北市"></div>
+    <div id="co-holes-setup"></div>
+    <input type="hidden" id="co-id">
+    <button class="btn btn-primary" onclick="saveCourse()">儲存</button>
+    <button class="btn btn-danger" id="del-course-btn" onclick="deleteCourse()" style="display:none;margin-top:8px">刪除球場</button>
+  </div>
+</div>
+
+<div id="modal-round-detail" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-rd-title">賽局詳情 <span class="modal-close" onclick="closeModal('modal-round-detail')">×</span></div>
+    <div id="modal-rd-content"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ---- DATA LAYER ----
+const DB = {
+  get players() { return JSON.parse(localStorage.getItem('golf_players') || '[]'); },
+  set players(v) { localStorage.setItem('golf_players', JSON.stringify(v)); },
+  get courses() { return JSON.parse(localStorage.getItem('golf_courses') || '[]'); },
+  set courses(v) { localStorage.setItem('golf_courses', JSON.stringify(v)); },
+  get rounds() { return JSON.parse(localStorage.getItem('golf_rounds') || '[]'); },
+  set rounds(v) { localStorage.setItem('golf_rounds', JSON.stringify(v)); }
+};
+
+// ---- HANDICAP CORE ----
+// hcpMatrix[`${pidA}_${pidB}`] = N means A gives B N strokes (positive=A gives, negative=A receives)
+// skipPairs: Set of canonical keys `${minId}_${maxId}` for pairs that don't play each other
+
+// Given hcp = N strokes A gives B (N can be negative):
+// Split across 18 holes by HCP ranking: front9 holes sorted by HCP asc, back9 holes sorted by HCP asc
+// Total strokes = abs(N). Positive strokes applied to giver, negative reversed.
+// e.g. A gives B 3(front)+2(back)=5: front holes HCP1,3,5 get a stroke; back holes HCP2,4 get a stroke
+// Returns a Set of hole indices (0-based) where giver gets +1 net stroke (they give one stroke on that hole)
+
+function computeStrokeHoles(course, totalStrokes) {
+  // totalStrokes = how many strokes the GIVER gives the RECEIVER
+  // Returns array of 18 booleans: strokeHoles[i] = true means giver gives stroke on hole i
+  const strokeHoles = new Array(18).fill(false);
+  if (totalStrokes === 0) return strokeHoles;
+  
+  const absN = Math.abs(totalStrokes);
+  const sign = totalStrokes > 0 ? 1 : -1; // 1=normal giving, handled outside
+  
+  // Sort all 18 holes by HCP rank (1=hardest, 18=easiest)
+  // Front 9 = holes 0-8, Back 9 = holes 9-17
+  // Distribute: first stroke to HCP1 (globally), second to HCP2, etc.
+  const sorted = course.holes
+    .map((h, i) => ({ idx: i, hcp: h.hcp }))
+    .sort((a, b) => a.hcp - b.hcp);
+  
+  // Apply up to absN strokes starting from hardest hole
+  for (let k = 0; k < Math.min(absN, 18); k++) {
+    strokeHoles[sorted[k].idx] = true;
+  }
+  return strokeHoles;
+}
+
+// ---- BUILT-IN COURSES ----
+const DEFAULT_COURSES = [
+  {
+    id: 'tc01', name: '林口球場', region: '新北市',
+    holes: [
+      {n:1,par:4,hcp:7,yards:380},{n:2,par:3,hcp:15,yards:165},{n:3,par:5,hcp:3,yards:520},
+      {n:4,par:4,hcp:11,yards:360},{n:5,par:4,hcp:1,yards:430},{n:6,par:3,hcp:17,yards:155},
+      {n:7,par:5,hcp:5,yards:510},{n:8,par:4,hcp:13,yards:350},{n:9,par:4,hcp:9,yards:400},
+      {n:10,par:4,hcp:8,yards:390},{n:11,par:3,hcp:16,yards:175},{n:12,par:5,hcp:2,yards:530},
+      {n:13,par:4,hcp:10,yards:365},{n:14,par:4,hcp:4,yards:420},{n:15,par:3,hcp:18,yards:145},
+      {n:16,par:5,hcp:6,yards:500},{n:17,par:4,hcp:14,yards:345},{n:18,par:4,hcp:12,yards:410}
+    ]
+  },
+  {
+    id: 'tc02', name: '大屯球場', region: '台北市',
+    holes: [
+      {n:1,par:4,hcp:5,yards:395},{n:2,par:5,hcp:1,yards:545},{n:3,par:3,hcp:13,yards:170},
+      {n:4,par:4,hcp:9,yards:375},{n:5,par:4,hcp:3,yards:440},{n:6,par:5,hcp:7,yards:515},
+      {n:7,par:3,hcp:17,yards:150},{n:8,par:4,hcp:11,yards:355},{n:9,par:4,hcp:15,yards:330},
+      {n:10,par:4,hcp:6,yards:385},{n:11,par:5,hcp:2,yards:535},{n:12,par:3,hcp:14,yards:165},
+      {n:13,par:4,hcp:10,yards:370},{n:14,par:4,hcp:4,yards:425},{n:15,par:5,hcp:8,yards:520},
+      {n:16,par:3,hcp:18,yards:140},{n:17,par:4,hcp:12,yards:360},{n:18,par:4,hcp:16,yards:340}
+    ]
+  },
+  {
+    id: 'tc03', name: '南投球場', region: '南投縣',
+    holes: [
+      {n:1,par:4,hcp:3,yards:415},{n:2,par:3,hcp:17,yards:160},{n:3,par:5,hcp:9,yards:505},
+      {n:4,par:4,hcp:7,yards:385},{n:5,par:4,hcp:1,yards:445},{n:6,par:3,hcp:15,yards:175},
+      {n:7,par:5,hcp:11,yards:495},{n:8,par:4,hcp:5,yards:400},{n:9,par:4,hcp:13,yards:355},
+      {n:10,par:4,hcp:4,yards:410},{n:11,par:3,hcp:16,yards:155},{n:12,par:5,hcp:2,yards:540},
+      {n:13,par:4,hcp:8,yards:380},{n:14,par:4,hcp:6,yards:420},{n:15,par:3,hcp:18,yards:135},
+      {n:16,par:5,hcp:10,yards:510},{n:17,par:4,hcp:14,yards:350},{n:18,par:4,hcp:12,yards:405}
+    ]
+  }
+];
+
+function initDB() {
+  if (DB.courses.length === 0) DB.courses = DEFAULT_COURSES;
+  if (DB.players.length === 0) {
+    DB.players = [
+      {id:'p1',name:'球員甲',hcpVs:{},history:[]},
+      {id:'p2',name:'球員乙',hcpVs:{},history:[]},
+      {id:'p3',name:'球員丙',hcpVs:{},history:[]},
+      {id:'p4',name:'球員丁',hcpVs:{},history:[]}
+    ];
+  }
+}
+
+// ---- APP STATE ----
+let game = null;
+
+// ---- SCREEN NAVIGATION ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // refresh screens
+  if (id === 'screen-players') renderPlayers();
+  if (id === 'screen-courses') renderCourses();
+  if (id === 'screen-history') renderHistory('rounds');
+  if (id === 'screen-newgame') setupNewGame();
+  if (id === 'screen-scoring') renderScoring();
+}
+
+// ---- TOAST ----
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- MODAL ----
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ---- PLAYER COLORS ----
+const PC = ['#2d8a50','#1565c0','#c0392b','#c8971a'];
+const PE = ['甲','乙','丙','丁'];
+
+function playerAvatar(idx) {
+  return `<div class="player-avatar" style="background:${PC[idx%4]}22;color:${PC[idx%4]}">${PE[idx%4]}</div>`;
+}
+
+// ---- NEW GAME SETUP ----
+function setupNewGame() {
+  const courses = DB.courses;
+  const sel = document.getElementById('sel-course');
+  sel.innerHTML = '<option value="">請選擇球場...</option>';
+  courses.forEach(c => {
+    sel.innerHTML += `<option value="${c.id}">${c.name} (${c.region})</option>`;
+  });
+
+  const players = DB.players;
+  const list = document.getElementById('player-select-list');
+  list.innerHTML = '';
+  players.forEach(p => {
+    const hcpCount = Object.keys(p.hcpVs || {}).length;
+    const sub = hcpCount ? `已設定 ${hcpCount} 位對手差點` : '尚未設定對手差點';
+    list.innerHTML += `
+      <div class="list-item" onclick="togglePlayer('${p.id}',this)">
+        <div class="list-item-main">
+          <div class="list-item-title">${p.name}</div>
+          <div class="list-item-sub">${sub}</div>
+        </div>
+        <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center" id="sel-${p.id}"></div>
+      </div>`;
+  });
+  document.getElementById('hcp-setup-card').style.display = 'none';
+  document.getElementById('course-info').style.display = 'none';
+}
+
+let selectedPlayers = [];
+let selectedAmount = 50;
+
+function togglePlayer(id, el) {
+  const idx = selectedPlayers.indexOf(id);
+  const icon = document.getElementById('sel-'+id);
+  if (idx === -1) {
+    if (selectedPlayers.length >= 4) { toast('最多選4位球員'); return; }
+    selectedPlayers.push(id);
+    icon.innerHTML = '✓'; icon.style.background = 'var(--green)'; icon.style.borderColor = 'var(--green)'; icon.style.color = '#fff'; icon.style.fontSize = '14px';
+  } else {
+    selectedPlayers.splice(idx, 1);
+    icon.innerHTML = ''; icon.style.background = ''; icon.style.borderColor = 'var(--border)'; icon.style.color = '';
+  }
+  updateHcpMatrix();
+}
+
+function updateHcpMatrix() {
+  const card = document.getElementById('hcp-setup-card');
+  if (selectedPlayers.length < 2) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const players = DB.players;
+  const pmap = {};
+  players.forEach(p => pmap[p.id] = p);
+
+  // Show all unique pairs: each pair has hcp adjuster + skip toggle
+  let html = '';
+  for (let i = 0; i < selectedPlayers.length; i++) {
+    for (let j = i+1; j < selectedPlayers.length; j++) {
+      const pid = selectedPlayers[i], opid = selectedPlayers[j];
+      const p = pmap[pid], op = pmap[opid];
+      const pi = i, oi = j;
+      // Pre-fill from stored hcpVs (from pid's perspective: pid gives opid N)
+      const stored = (p.hcpVs || {})[opid] !== undefined ? (p.hcpVs[opid]) : 0;
+      const pairKey = `pair_${pid}_${opid}`;
+      const hcpKey = `hcp_${pid}_${opid}`;
+      const skipKey = `skip_${pid}_${opid}`;
+      html += `<div style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:14px;font-weight:700;flex:1">
+            <span style="color:${PC[pi%4]}">${p.name}</span>
+            <span style="color:var(--muted);font-size:12px"> vs </span>
+            <span style="color:${PC[oi%4]}">${op.name}</span>
+          </span>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--red);cursor:pointer">
+            <input type="checkbox" id="${skipKey}" style="width:16px;height:16px;accent-color:var(--red)"
+              onchange="toggleSkip('${pid}','${opid}',this.checked)">
+            不比此組
+          </label>
+        </div>
+        <div id="${pairKey}" style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:var(--muted);flex:1"><b style="color:${PC[pi%4]}">${p.name}</b> 讓 <b style="color:${PC[oi%4]}">${op.name}</b></span>
+          <button class="hbtn" onclick="adjustHcp2('${pid}','${opid}',-1)">−</button>
+          <span id="${hcpKey}" style="font-size:20px;font-weight:800;color:var(--green);min-width:36px;text-align:center">${stored}</span>
+          <button class="hbtn" onclick="adjustHcp2('${pid}','${opid}',1)">+</button>
+          <span style="font-size:11px;color:var(--muted);min-width:40px" id="hcplabel_${pid}_${opid}">${stored>0?`讓${stored}`:stored<0?`受${Math.abs(stored)}`:'平手'}</span>
+        </div>
+      </div>`;
+    }
+  }
+  document.getElementById('hcp-matrix').innerHTML = html;
+}
+
+function toggleSkip(pid, opid, skipped) {
+  const pairDiv = document.getElementById(`pair_${pid}_${opid}`);
+  pairDiv.style.opacity = skipped ? '0.3' : '1';
+  pairDiv.style.pointerEvents = skipped ? 'none' : '';
+}
+
+function adjustHcp2(pid, opid, delta) {
+  // Try both key directions (pair shown only once)
+  let el = document.getElementById(`hcp_${pid}_${opid}`);
+  let labelEl = document.getElementById(`hcplabel_${pid}_${opid}`);
+  if (!el) {
+    // pair stored as opid_pid
+    el = document.getElementById(`hcp_${opid}_${pid}`);
+    labelEl = document.getElementById(`hcplabel_${opid}_${pid}`);
+    if (!el) return;
+    // adjusting from opid's side: delta is reversed
+    delta = -delta;
+  }
+  const cur = parseInt(el.textContent) + delta;
+  el.textContent = cur;
+}
+function onCourseChange() {
+  const id = document.getElementById('sel-course').value;
+  const c = DB.courses.find(x => x.id === id);
+  const info = document.getElementById('course-info');
+  if (!c) { info.style.display = 'none'; return; }
+  info.style.display = 'block';
+  const total = c.holes.reduce((s,h) => s+h.par, 0);
+  document.getElementById('course-info-text').innerHTML = `全場 ${c.holes.length} 洞・標準桿 ${total}・${c.region}`;
+}
+
+function pickAmount(el) {
+  document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAmount = parseInt(el.dataset.v);
+  document.getElementById('custom-amount').value = '';
+}
+
+function startGame() {
+  const courseId = document.getElementById('sel-course').value;
+  if (!courseId) { toast('請選擇球場'); return; }
+  if (selectedPlayers.length < 2) { toast('請選擇至少2位球員'); return; }
+  const custom = document.getElementById('custom-amount').value;
+  const amount = custom ? parseInt(custom) : selectedAmount;
+  const course = DB.courses.find(c => c.id === courseId);
+  const players = DB.players;
+  const pmap = {};
+  players.forEach(p => pmap[p.id] = p);
+
+  // Build handicap matrix & skip set from UI pairs
+  const hcpMatrix = {};
+  const skipPairs = new Set();
+  for (let i = 0; i < selectedPlayers.length; i++) {
+    for (let j = i+1; j < selectedPlayers.length; j++) {
+      const pid = selectedPlayers[i], opid = selectedPlayers[j];
+      const hcpEl = document.getElementById(`hcp_${pid}_${opid}`);
+      const skipEl = document.getElementById(`skip_${pid}_${opid}`);
+      const val = hcpEl ? parseInt(hcpEl.textContent) || 0 : 0;
+      hcpMatrix[`${pid}_${opid}`] = val;
+      hcpMatrix[`${opid}_${pid}`] = -val;
+      if (skipEl && skipEl.checked) skipPairs.add(`${pid}_${opid}`);
+    }
+  }
+
+  // Pre-compute which holes each giver gives a stroke on (by HCP ranking)
+  // strokeHolesCache[`${giver}_${receiver}`] = bool[18], true = giver gives stroke on that hole
+  const strokeHolesCache = {};
+  for (let i = 0; i < selectedPlayers.length; i++) {
+    for (let j = i+1; j < selectedPlayers.length; j++) {
+      const pid = selectedPlayers[i], opid = selectedPlayers[j];
+      const val = hcpMatrix[`${pid}_${opid}`];
+      const sh = computeStrokeHoles(course, Math.abs(val));
+      if (val >= 0) {
+        strokeHolesCache[`${pid}_${opid}`] = sh; // pid gives on these holes
+        strokeHolesCache[`${opid}_${pid}`] = sh; // same holes, opid is receiver
+      } else {
+        strokeHolesCache[`${opid}_${pid}`] = sh; // opid gives
+        strokeHolesCache[`${pid}_${opid}`] = sh;
+      }
+    }
+  }
+
+  game = {
+    courseId, course,
+    playerIds: [...selectedPlayers],
+    players: selectedPlayers.map(id => ({...pmap[id]})),
+    amount, hcpMatrix,
+    skipPairs: [...skipPairs],
+    strokeHolesCache,
+    currentHole: 0,
+    holes: course.holes.map(() => ({})),
+    date: new Date().toLocaleDateString('zh-TW')
+  };
+  selectedPlayers = [];
+  showScreen('screen-scoring');
+}
+
+// ---- SCORING ----
+function renderScoring() {
+  if (!game) return;
+  const h = game.course.holes[game.currentHole];
+  document.getElementById('hn-num').textContent = `第 ${h.n} 洞`;
+  document.getElementById('hn-detail').textContent = `Par ${h.par} · HCP ${h.hcp} · ${h.yards}碼`;
+  document.getElementById('hn-progress').style.width = `${((game.currentHole+1)/18)*100}%`;
+
+  const area = document.getElementById('score-players-area');
+  let html = '';
+
+  game.players.forEach((p, pi) => {
+    const score = game.holes[game.currentHole][p.id] || h.par;
+    const scoreName = getScoreName(score, h.par);
+
+    // Show per-opponent status on THIS hole
+    const opBadges = game.players.filter(op => op.id !== p.id).map(op => {
+      if (isPairSkipped(p.id, op.id)) return `<span style="font-size:11px;color:var(--muted)">vs ${op.name}:不比</span>`;
+      const hcpVal = game.hcpMatrix[`${p.id}_${op.id}`] || 0;
+      const giver = hcpVal >= 0 ? p.id : op.id;
+      const sh = game.strokeHolesCache[`${giver}_${hcpVal>=0?op.id:p.id}`] || [];
+      const isStroke = sh[game.currentHole] === true;
+      if (!isStroke) return `<span style="font-size:11px;color:var(--muted)">vs ${op.name}:無讓</span>`;
+      const isGiver = giver === p.id;
+      return `<span style="font-size:11px;font-weight:700;color:${isGiver?'var(--red)':'var(--blue)'}">${isGiver?`讓${op.name}⬇`:`受${op.name}⬆`}</span>`;
+    }).join(' ');
+
+    html += `<div class="score-player">
+      <div class="score-player-header">
+        ${playerAvatar(pi)}
+        <div style="flex:1">
+          <div class="score-player-name">${p.name}</div>
+          <div style="font-size:11px;margin-top:3px;line-height:1.8">${opBadges}</div>
+        </div>
+      </div>
+      <div class="stroke-control">
+        <label>桿數</label>
+        <div style="font-size:12px;color:${getScoreColor(score,h.par)}">${scoreName}</div>
+        <div class="stroke-btns">
+          <button class="stroke-btn minus" onclick="adjStroke('${p.id}',-1)">−</button>
+          <span class="stroke-val" id="sv-${p.id}" style="color:${getScoreColor(score,h.par)}">${score}</span>
+          <button class="stroke-btn" onclick="adjStroke('${p.id}',1)">+</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  area.innerHTML = html;
+}
+
+function getScoreName(s, par) {
+  const d = s - par;
+  if (s === 1) return '一桿進洞 HIO 🎉';
+  if (d <= -3) return '雙鷹+ 🦅🦅';
+  if (d === -2) return par >= 5 ? 'Eagle 🦅' : (par === 4 ? 'Eagle 🦅' : '-');
+  if (d === -1) return 'Birdie 🐦';
+  if (d === 0) return 'Par';
+  if (d === 1) return 'Bogey';
+  if (d === 2) return 'Double Bogey';
+  return `+${d}`;
+}
+
+function getScoreColor(s, par) {
+  const d = s - par;
+  if (s === 1 || d <= -2) return 'var(--gold)';
+  if (d === -1) return 'var(--blue)';
+  if (d === 0) return 'var(--muted)';
+  return 'var(--red)';
+}
+
+function adjStroke(pid, delta) {
+  const hole = game.course.holes[game.currentHole];
+  if (!game.holes[game.currentHole][pid]) game.holes[game.currentHole][pid] = hole.par;
+  let v = game.holes[game.currentHole][pid] + delta;
+  if (v < 1) v = 1;
+  if (v > 15) v = 15;
+  game.holes[game.currentHole][pid] = v;
+  const el = document.getElementById('sv-'+pid);
+  if (el) {
+    el.textContent = v;
+    el.style.color = getScoreColor(v, hole.par);
+  }
+}
+
+function prevHole() {
+  if (game.currentHole > 0) { game.currentHole--; renderScoring(); }
+}
+
+function nextHole() {
+  // Ensure all players have scores for current hole
+  const h = game.course.holes[game.currentHole];
+  game.players.forEach(p => {
+    if (!game.holes[game.currentHole][p.id]) game.holes[game.currentHole][p.id] = h.par;
+  });
+  if (game.currentHole < 17) {
+    game.currentHole++;
+    renderScoring();
+  } else {
+    showScorecard();
+  }
+}
+
+// ---- POINTS CALCULATION ----
+// Returns { playerId: points } for one hole
+// Rules:
+// 1. For each active pair (not skipped), compare net scores (giver's actual+1 on stroke holes)
+//    Lower net score wins 1 matchplay point
+// 2. Birdie bonus: +1 per player who birdies. If BOTH birdie in a pair, cancel each other's bonus
+// 3. Eagle on par4: +4, Eagle on par5: +2, Albatross/HIO: +10
+// Bonus points are independent from matchplay result (can win bonus even on halved hole)
+
+function isPairSkipped(pidA, pidB) {
+  const sp = game.skipPairs || [];
+  return sp.includes(`${pidA}_${pidB}`) || sp.includes(`${pidB}_${pidA}`);
+}
+
+function calcHolePoints(holeIdx) {
+  const h = game.course.holes[holeIdx];
+  const scores = {};
+  game.players.forEach(p => { scores[p.id] = game.holes[holeIdx][p.id] || h.par; });
+
+  const matchPts = {};   // matchplay win/loss points per player
+  const bonusPts = {};   // birdie/eagle/HIO bonus points per player
+  game.players.forEach(p => { matchPts[p.id] = 0; bonusPts[p.id] = 0; });
+
+  // Step 1: pairwise matchplay (net strokes)
+  for (let i = 0; i < game.players.length; i++) {
+    for (let j = i+1; j < game.players.length; j++) {
+      const pi = game.players[i], pj = game.players[j];
+      if (isPairSkipped(pi.id, pj.id)) continue;
+
+      const hcpIJ = game.hcpMatrix[`${pi.id}_${pj.id}`] || 0;
+      // hcpIJ > 0: pi gives pj strokes; < 0: pj gives pi strokes
+      const giver = hcpIJ >= 0 ? pi.id : pj.id;
+      const receiver = hcpIJ >= 0 ? pj.id : pi.id;
+      const sh = game.strokeHolesCache[`${giver}_${receiver}`] || [];
+      const isStrokeHole = sh[holeIdx] === true;
+
+      // Net score: giver gets +1 on stroke holes (they must beat by more)
+      let netI = scores[pi.id];
+      let netJ = scores[pj.id];
+      if (isStrokeHole) {
+        if (giver === pi.id) netI += 1;
+        else netJ += 1;
+      }
+
+      if (netI < netJ) matchPts[pi.id] += 1;
+      else if (netJ < netI) matchPts[pj.id] += 1;
+      // halve: no matchplay point
+    }
+  }
+
+  // Step 2: birdie/eagle/HIO bonus (independent of matchplay)
+  game.players.forEach(p => {
+    const s = scores[p.id];
+    const d = s - h.par;
+    if (s === 1) bonusPts[p.id] = 10;           // HIO
+    else if (d <= -3) bonusPts[p.id] = 10;      // albatross
+    else if (d === -2) {
+      bonusPts[p.id] = h.par === 5 ? 2 : 4;    // eagle: par5=+2, par4=+4
+    } else if (d === -1) {
+      bonusPts[p.id] = 1;                        // birdie bonus
+    }
+  });
+
+  // Step 3: birdie bonus cancellation — only between pairs that are playing each other
+  // If both players in an active pair birdie, cancel each other's birdie bonus for that pair
+  // Track net birdie cancellations per player
+  const birdieCancelCount = {};
+  game.players.forEach(p => { birdieCancelCount[p.id] = 0; });
+
+  for (let i = 0; i < game.players.length; i++) {
+    for (let j = i+1; j < game.players.length; j++) {
+      const pi = game.players[i], pj = game.players[j];
+      if (isPairSkipped(pi.id, pj.id)) continue;
+      const di = scores[pi.id] - h.par;
+      const dj = scores[pj.id] - h.par;
+      if (di === -1 && dj === -1) {
+        birdieCancelCount[pi.id]++;
+        birdieCancelCount[pj.id]++;
+      }
+    }
+  }
+
+  // A birdie bonus is cancelled if cancelled by ALL active opponents (each cancellation removes 1 bonus)
+  // Per spec: bonuses cancel between a pair — so subtract one per cancellation but don't go below 0
+  game.players.forEach(p => {
+    if (bonusPts[p.id] === 1) { // only birdie bonuses cancel
+      bonusPts[p.id] = Math.max(0, bonusPts[p.id] - birdieCancelCount[p.id]);
+    }
+  });
+
+  // Combine
+  const pts = {};
+  game.players.forEach(p => { pts[p.id] = matchPts[p.id] + bonusPts[p.id]; });
+
+  // Also expose breakdown for scorecard display
+  pts._matchPts = matchPts;
+  pts._bonusPts = bonusPts;
+  return pts;
+}
+
+// Returns pairwise hole wins: { `${pidA}_${pidB}`: winCount } for all active pairs
+function calcPairwiseHoleWins() {
+  const wins = {};
+  for (let i = 0; i < game.players.length; i++) {
+    for (let j = i+1; j < game.players.length; j++) {
+      const pi = game.players[i], pj = game.players[j];
+      if (isPairSkipped(pi.id, pj.id)) continue;
+      wins[`${pi.id}_${pj.id}`] = 0;
+      wins[`${pj.id}_${pi.id}`] = 0;
+    }
+  }
+  for (let h = 0; h < 18; h++) {
+    const hole = game.course.holes[h];
+    const scores = {};
+    game.players.forEach(p => { scores[p.id] = game.holes[h][p.id] || hole.par; });
+    for (let i = 0; i < game.players.length; i++) {
+      for (let j = i+1; j < game.players.length; j++) {
+        const pi = game.players[i], pj = game.players[j];
+        if (isPairSkipped(pi.id, pj.id)) continue;
+        const hcpIJ = game.hcpMatrix[`${pi.id}_${pj.id}`] || 0;
+        const giver = hcpIJ >= 0 ? pi.id : pj.id;
+        const receiver = hcpIJ >= 0 ? pj.id : pi.id;
+        const sh = game.strokeHolesCache[`${giver}_${receiver}`] || [];
+        let ni = scores[pi.id], nj = scores[pj.id];
+        if (sh[h]) { if (giver===pi.id) ni++; else nj++; }
+        if (ni < nj) wins[`${pi.id}_${pj.id}`]++;
+        else if (nj < ni) wins[`${pj.id}_${pi.id}`]++;
+      }
+    }
+  }
+  return wins;
+}
+
+function calcTotalPoints() {
+  const total = {};
+  game.players.forEach(p => { total[p.id] = 0; });
+  for (let i = 0; i < 18; i++) {
+    const hp = calcHolePoints(i);
+    game.players.forEach(p => { total[p.id] += (hp[p.id] || 0); });
+  }
+  return total;
+}
+
+// ---- SCORECARD VIEW ----
+function showScorecard() {
+  const h = game.course.holes[game.currentHole];
+  game.players.forEach(p => {
+    if (!game.holes[game.currentHole][p.id]) game.holes[game.currentHole][p.id] = h.par;
+  });
+
+  const totals = calcTotalPoints();
+
+  // ---- Totals summary card ----
+  let totHtml = `<div style="display:grid;grid-template-columns:repeat(${game.players.length},1fr);gap:8px">`;
+  game.players.forEach((p,pi) => {
+    const pts = totals[p.id];
+    const money = pts * game.amount;
+    totHtml += `<div style="text-align:center;padding:10px 6px;background:${PC[pi%4]}15;border-radius:10px">
+      <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px">${p.name}</div>
+      <div style="font-size:24px;font-weight:800;color:${PC[pi%4]}">${pts}</div>
+      <div style="font-size:10px;color:var(--muted)">點</div>
+      <div style="font-size:11px;font-weight:700;color:${money>=0?'var(--green)':'var(--red)'};margin-top:2px">${money>=0?'+':''}$${money}</div>
+    </div>`;
+  });
+  totHtml += '</div>';
+  document.getElementById('sc-totals-area').innerHTML = totHtml;
+
+  // Cache all hole points
+  const allHolePts = [];
+  for (let i = 0; i < 18; i++) allHolePts.push(calcHolePoints(i));
+
+  // ---- Main scorecard table ----
+  // Columns: 洞 Par HCP | [Name strokes, Name pts] x players
+  let thead = `<tr><th>洞</th><th>Par</th><th>HCP</th>`;
+  game.players.forEach(p => {
+    thead += `<th colspan="2" style="min-width:60px">${p.name}</th>`;
+  });
+  thead += `</tr>`;
+  thead += `<tr><th></th><th></th><th></th>`;
+  game.players.forEach(() => {
+    thead += `<th style="font-size:10px;font-weight:500;opacity:0.8">桿</th><th style="font-size:10px;font-weight:500;opacity:0.8">點</th>`;
+  });
+  thead += `</tr>`;
+
+  function scoreClass(s, par) {
+    const d = s - par;
+    if (s === 1 || d <= -2) return 'eagle';
+    if (d === -1) return 'birdie';
+    if (d === 0) return 'par';
+    return 'bogey';
+  }
+
+  function subtotalRow(label, fromHole, toHole, style='background:#e8f5ed') {
+    let row = `<tr style="${style}">`;
+    row += `<td colspan="3" style="font-weight:700;color:var(--green);text-align:left;padding-left:8px">${label}</td>`;
+    game.players.forEach(p => {
+      let strokes = 0, pts = 0;
+      for (let k = fromHole; k < toHole; k++) {
+        strokes += game.holes[k][p.id] || game.course.holes[k].par;
+        pts += allHolePts[k][p.id] || 0;
+      }
+      row += `<td style="font-weight:700;color:var(--text)">${strokes}</td>`;
+      row += `<td style="font-weight:700;color:var(--green)">${pts>0?'+':''}${pts}</td>`;
+    });
+    row += `</tr>`;
+    return row;
+  }
+
+  let tbody = thead;
+  for (let i = 0; i < 18; i++) {
+    const hole = game.course.holes[i];
+    const hp = allHolePts[i];
+    tbody += `<tr>`;
+    tbody += `<td class="col-hole">${hole.n}</td><td>${hole.par}</td><td>${hole.hcp}</td>`;
+    game.players.forEach(p => {
+      const s = game.holes[i][p.id] || hole.par;
+      const pts = hp[p.id] || 0;
+      const cls = scoreClass(s, hole.par);
+      tbody += `<td class="${cls}">${s}</td>`;
+      tbody += `<td style="font-size:12px;color:${pts>0?'var(--green)':pts<0?'var(--red)':'var(--muted)'};font-weight:${pts!==0?700:400}">${pts!==0?(pts>0?'+':'')+pts:'-'}</td>`;
+    });
+    tbody += `</tr>`;
+    if (i === 8) tbody += subtotalRow('前9', 0, 9);
+  }
+  tbody += subtotalRow('後9', 9, 18);
+  // Total row
+  let totRow = `<tr style="background:var(--green)">`;
+  totRow += `<td colspan="3" style="color:#fff;font-weight:800;text-align:left;padding-left:8px">合計</td>`;
+  game.players.forEach(p => {
+    let strokes = 0;
+    for (let k = 0; k < 18; k++) strokes += game.holes[k][p.id] || game.course.holes[k].par;
+    const pts = totals[p.id];
+    totRow += `<td style="color:#fff;font-weight:800">${strokes}</td>`;
+    totRow += `<td style="color:${pts>=0?'#a8ffca':'#ffb3b3'};font-weight:800">${pts>0?'+':''}${pts}</td>`;
+  });
+  totRow += `</tr>`;
+  tbody += totRow;
+
+  document.getElementById('sc-main-table').innerHTML = tbody;
+  showScreen('screen-scorecard');
+}
+
+// ---- END GAME ----
+function endGame() {
+  const totals = calcTotalPoints();
+  const pairWins = calcPairwiseHoleWins();
+
+  // Result cards — total points + money per player
+  let rhtml = '';
+  game.players.forEach((p,pi) => {
+    const pts = totals[p.id];
+    const money = pts * game.amount;
+    // Show per-opponent breakdown
+    let vsLines = '';
+    game.players.forEach((op, oi) => {
+      if (op.id === p.id) return;
+      if (isPairSkipped(p.id, op.id)) {
+        vsLines += `<div style="font-size:12px;color:var(--muted);padding:3px 0">vs ${op.name}：不比</div>`;
+        return;
+      }
+      const w = pairWins[`${p.id}_${op.id}`] || 0;
+      const l = pairWins[`${op.id}_${p.id}`] || 0;
+      const net = w - l;
+      vsLines += `<div style="font-size:12px;padding:3px 0;color:${net>0?'var(--green)':net<0?'var(--red)':'var(--muted)'}">vs ${op.name}：${w}勝 ${l}負 (淨${net>0?'+':''}${net}洞)</div>`;
+    });
+    rhtml += `<div class="card" style="border-left:4px solid ${PC[pi%4]}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        ${playerAvatar(pi)}
+        <div style="flex:1"><div style="font-size:16px;font-weight:700">${p.name}</div>${vsLines}</div>
+      </div>
+      <div class="summary-row"><span class="label">總積分</span><span class="val" style="color:${PC[pi%4]}">${pts} 點</span></div>
+      <div class="summary-row"><span class="label">賭金</span><span class="val ${money>=0?'pos':'neg'}">${money>=0?'+':''}$${money}</span></div>
+    </div>`;
+  });
+  document.getElementById('result-players').innerHTML = rhtml;
+
+  // HCP adjustment — per active pair based on hole win differential
+  let haHtml = '';
+  const newHcpVs = {};
+  const players = DB.players;
+  game.players.forEach(p => {
+    const dbp = players.find(x => x.id === p.id);
+    newHcpVs[p.id] = { ...(dbp?.hcpVs || {}) };
+  });
+  const hcpChanges = {};
+  game.players.forEach(p => { hcpChanges[p.id] = []; });
+
+  for (let i = 0; i < game.players.length; i++) {
+    for (let j = i+1; j < game.players.length; j++) {
+      const pi = game.players[i], pj = game.players[j];
+      if (isPairSkipped(pi.id, pj.id)) {
+        hcpChanges[pi.id].push({ vs: pj.name, old: game.hcpMatrix[`${pi.id}_${pj.id}`]||0, newV: game.hcpMatrix[`${pi.id}_${pj.id}`]||0, adj: 0, skipped: true });
+        hcpChanges[pj.id].push({ vs: pi.name, old: game.hcpMatrix[`${pj.id}_${pi.id}`]||0, newV: game.hcpMatrix[`${pj.id}_${pi.id}`]||0, adj: 0, skipped: true });
+        continue;
+      }
+      const wi = pairWins[`${pi.id}_${pj.id}`] || 0;
+      const wj = pairWins[`${pj.id}_${pi.id}`] || 0;
+      const net = wi - wj; // positive = pi wins
+      const curHcp = game.hcpMatrix[`${pi.id}_${pj.id}`] || 0;
+      // Winner gives more strokes next time
+      const adj = Math.floor(Math.abs(net) / 3) * (net > 0 ? 1 : -1);
+      const newHcp = curHcp + adj;
+      newHcpVs[pi.id][pj.id] = newHcp;
+      newHcpVs[pj.id][pi.id] = -newHcp;
+      hcpChanges[pi.id].push({ vs: pj.name, old: curHcp, newV: newHcp, adj, net });
+      hcpChanges[pj.id].push({ vs: pi.name, old: -curHcp, newV: -newHcp, adj: -adj, net: -net });
+    }
+  }
+
+  game.players.forEach((p, pi) => {
+    haHtml += `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        ${playerAvatar(pi)}<span style="font-size:15px;font-weight:700">${p.name}</span>
+      </div>`;
+    hcpChanges[p.id].forEach(c => {
+      if (c.skipped) {
+        haHtml += `<div style="padding:5px 0 5px 36px;font-size:13px;color:var(--muted)">vs ${c.vs}：不比（差點不變 ${c.old}洞）</div>`;
+        return;
+      }
+      const color = c.adj > 0 ? 'var(--blue)' : c.adj < 0 ? 'var(--red)' : 'var(--muted)';
+      const adjTxt = c.adj === 0 ? '不變' : (c.adj > 0 ? `+${c.adj}洞` : `${c.adj}洞`);
+      const netTxt = c.net > 0 ? `勝${c.net}洞` : c.net < 0 ? `負${Math.abs(c.net)}洞` : '平手';
+      haHtml += `<div style="display:flex;align-items:center;gap:6px;padding:5px 0 5px 36px;font-size:13px">
+        <span style="color:var(--muted);flex:1">vs ${c.vs}（${netTxt}）</span>
+        <span style="color:var(--muted)">${c.old}→</span>
+        <span style="font-weight:800;color:${color}">${c.newV}洞</span>
+        <span style="font-size:11px;background:${c.adj===0?'var(--bg)':c.adj>0?'#e3f2fd':'#fdecea'};color:${color};padding:2px 6px;border-radius:10px">${adjTxt}</span>
+      </div>`;
+    });
+    haHtml += '</div>';
+    game.players[pi]._newHcpVs = newHcpVs[p.id];
+  });
+  document.getElementById('result-hcp-adj').innerHTML = haHtml;
+  document.getElementById('result-date').textContent = game.date;
+  showScreen('screen-result');
+}
+
+function confirmDiscard() {
+  if (confirm('確定放棄此局？成績不會儲存，差點也不會更新。')) {
+    game = null;
+    showScreen('screen-home');
+    toast('賽局已放棄');
+  }
+}
+
+function saveAndHome() {
+  const players = DB.players;
+  game.players.forEach(gp => {
+    const p = players.find(x => x.id === gp.id);
+    if (p && gp._newHcpVs !== undefined) {
+      p.hcpVs = gp._newHcpVs;
+      p.history = p.history || [];
+      p.history.push({ date: game.date, hcpVs: { ...gp._newHcpVs } });
+    }
+  });
+  DB.players = players;
+  
+  // Save round
+  const rounds = DB.rounds;
+  const totals = calcTotalPoints();
+  rounds.push({
+    id: Date.now().toString(),
+    date: game.date,
+    courseName: game.course.name,
+    courseId: game.courseId,
+    playerIds: game.playerIds,
+    playerNames: game.players.map(p=>p.name),
+    amount: game.amount,
+    totals,
+    holes: game.holes,
+    hcpMatrix: game.hcpMatrix
+  });
+  DB.rounds = rounds;
+  
+  toast('賽局已儲存！差點已更新');
+  game = null;
+  showScreen('screen-home');
+}
+
+// ---- PLAYERS ----
+function renderPlayers() {
+  const players = DB.players;
+  const list = document.getElementById('players-list');
+  if (players.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="ei">👤</div><p>尚無球員，請新增</p></div>`;
+    return;
+  }
+  list.innerHTML = players.map((p,i) => {
+    // Show per-opponent handicap summary
+    const hcpLines = Object.entries(p.hcpVs || {}).map(([opId, v]) => {
+      const op = players.find(x => x.id === opId);
+      if (!op) return null;
+      return `vs ${op.name}：${v > 0 ? `讓${v}洞` : v < 0 ? `受${Math.abs(v)}洞` : '平手'}`;
+    }).filter(Boolean);
+    const sub = hcpLines.length ? hcpLines.join('・') : '尚未設定差點';
+    return `
+    <div class="list-item" onclick="openEditPlayer('${p.id}')">
+      <div style="width:36px;height:36px;border-radius:50%;background:${PC[i%4]}22;color:${PC[i%4]};display:flex;align-items:center;justify-content:center;font-weight:700;margin-right:12px;flex-shrink:0">${PE[i%4]}</div>
+      <div class="list-item-main">
+        <div class="list-item-title">${p.name}</div>
+        <div class="list-item-sub" style="font-size:11px">${sub}</div>
+      </div>
+      <div class="list-item-action">›</div>
+    </div>`;
+  }).join('');
+}
+
+function openAddPlayer() {
+  document.getElementById('pl-name').value = '';
+  document.getElementById('pl-id').value = '';
+  document.getElementById('pl-hcp-matrix').innerHTML = '<div style="font-size:13px;color:var(--muted)">儲存後可在此設定對各球員的差點</div>';
+  document.getElementById('del-player-btn').style.display = 'none';
+  document.getElementById('modal-player').classList.add('open');
+}
+
+function openEditPlayer(id) {
+  const players = DB.players;
+  const p = players.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pl-name').value = p.name;
+  document.getElementById('pl-id').value = p.id;
+  document.getElementById('del-player-btn').style.display = 'block';
+
+  // Build per-opponent hcp matrix
+  const others = players.filter(x => x.id !== id);
+  if (others.length === 0) {
+    document.getElementById('pl-hcp-matrix').innerHTML = '<div style="font-size:13px;color:var(--muted)">新增更多球員後可在此設定差點</div>';
+  } else {
+    let mHtml = '';
+    others.forEach(op => {
+      const v = (p.hcpVs || {})[op.id] !== undefined ? (p.hcpVs || {})[op.id] : 0;
+      mHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="flex:1;font-size:14px">vs <b>${op.name}</b></span>
+        <button class="hbtn" onclick="adjPlayerHcp('${id}','${op.id}',-1)">−</button>
+        <span id="phcp_${id}_${op.id}" style="font-size:20px;font-weight:800;color:var(--green);min-width:32px;text-align:center">${v}</span>
+        <button class="hbtn" onclick="adjPlayerHcp('${id}','${op.id}',1)">+</button>
+        <span style="font-size:11px;color:var(--muted);min-width:50px">${v>0?`讓${v}洞`:v<0?`受${Math.abs(v)}洞`:'平手'}</span>
+      </div>`;
+    });
+    document.getElementById('pl-hcp-matrix').innerHTML = mHtml;
+  }
+  document.getElementById('modal-player').classList.add('open');
+}
+
+function adjPlayerHcp(pid, opid, delta) {
+  const el = document.getElementById(`phcp_${pid}_${opid}`);
+  const v = parseInt(el.textContent) + delta;
+  el.textContent = v;
+  // Update label
+  const label = el.nextElementSibling?.nextElementSibling || el.parentElement.querySelector('span:last-child');
+  // find the last span in that row for label
+  const row = el.closest('div');
+  const spans = row.querySelectorAll('span');
+  const lastSpan = spans[spans.length-1];
+  if (lastSpan) lastSpan.textContent = v>0?`讓${v}洞`:v<0?`受${Math.abs(v)}洞`:'平手';
+}
+
+function savePlayer() {
+  const name = document.getElementById('pl-name').value.trim();
+  if (!name) { toast('請輸入姓名'); return; }
+  const id = document.getElementById('pl-id').value;
+  const players = DB.players;
+  
+  if (id) {
+    const p = players.find(x => x.id === id);
+    if (p) {
+      p.name = name;
+      // Save hcpVs from matrix inputs
+      const others = players.filter(x => x.id !== id);
+      others.forEach(op => {
+        const el = document.getElementById(`phcp_${id}_${op.id}`);
+        if (el) {
+          const v = parseInt(el.textContent) || 0;
+          p.hcpVs = p.hcpVs || {};
+          p.hcpVs[op.id] = v;
+          // Mirror to opponent
+          op.hcpVs = op.hcpVs || {};
+          op.hcpVs[id] = -v;
+        }
+      });
+    }
+  } else {
+    players.push({ id: 'p'+Date.now(), name, hcpVs: {}, history: [] });
+  }
+  DB.players = players;
+  closeModal('modal-player');
+  renderPlayers();
+  toast('球員資料已儲存');
+}
+
+function deletePlayer() {
+  const id = document.getElementById('pl-id').value;
+  if (!id) return;
+  const players = DB.players.filter(p => p.id !== id);
+  DB.players = players;
+  closeModal('modal-player');
+  renderPlayers();
+  toast('球員已刪除');
+}
+
+// ---- COURSES ----
+function renderCourses() {
+  const courses = DB.courses;
+  const list = document.getElementById('courses-list');
+  list.innerHTML = courses.map(c => `
+    <div class="list-item" onclick="openEditCourse('${c.id}')">
+      <div class="list-item-main">
+        <div class="list-item-title">⛳ ${c.name}</div>
+        <div class="list-item-sub">${c.region}・18洞・Par ${c.holes.reduce((s,h)=>s+h.par,0)}</div>
+      </div>
+      <div class="list-item-action">›</div>
+    </div>`).join('');
+}
+
+function buildHolesUI(holes) {
+  let html = '<div class="section-divider">18洞詳細資料</div>';
+  html += '<div style="overflow-x:auto"><table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">';
+  html += '<tr><th style="padding:6px 8px;background:var(--green);color:#fff">洞</th><th style="padding:6px 8px;background:var(--green);color:#fff">Par</th><th style="padding:6px 8px;background:var(--green);color:#fff">HCP</th><th style="padding:6px 8px;background:var(--green);color:#fff">碼數</th></tr>';
+  for (let i = 0; i < 18; i++) {
+    const h = holes[i] || {par:4,hcp:i+1,yards:380};
+    html += `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px 8px;text-align:center;font-weight:700;color:var(--green)">${i+1}</td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${h.par}" id="co-par-${i}" style="width:44px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)" min="3" max="5" inputmode="numeric"></td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${h.hcp}" id="co-hcp-${i}" style="width:44px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)" min="1" max="18" inputmode="numeric"></td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${h.yards}" id="co-yds-${i}" style="width:54px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg)" inputmode="numeric"></td>
+    </tr>`;
+  }
+  html += '</table></div>';
+  return html;
+}
+
+function openAddCourse() {
+  document.getElementById('co-name').value = '';
+  document.getElementById('co-region').value = '';
+  document.getElementById('co-id').value = '';
+  document.getElementById('del-course-btn').style.display = 'none';
+  const blank = Array.from({length:18},(_,i)=>({par:4,hcp:i+1,yards:380}));
+  document.getElementById('co-holes-setup').innerHTML = buildHolesUI(blank);
+  document.getElementById('modal-course').classList.add('open');
+}
+
+function openEditCourse(id) {
+  const c = DB.courses.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('co-name').value = c.name;
+  document.getElementById('co-region').value = c.region;
+  document.getElementById('co-id').value = c.id;
+  document.getElementById('del-course-btn').style.display = 'block';
+  document.getElementById('co-holes-setup').innerHTML = buildHolesUI(c.holes);
+  document.getElementById('modal-course').classList.add('open');
+}
+
+function saveCourse() {
+  const name = document.getElementById('co-name').value.trim();
+  if (!name) { toast('請輸入球場名稱'); return; }
+  const region = document.getElementById('co-region').value.trim();
+  const id = document.getElementById('co-id').value;
+  const holes = Array.from({length:18},(_,i)=>({
+    n: i+1,
+    par: parseInt(document.getElementById(`co-par-${i}`).value) || 4,
+    hcp: parseInt(document.getElementById(`co-hcp-${i}`).value) || (i+1),
+    yards: parseInt(document.getElementById(`co-yds-${i}`).value) || 380
+  }));
+  const courses = DB.courses;
+  if (id) {
+    const c = courses.find(x => x.id === id);
+    if (c) { c.name = name; c.region = region; c.holes = holes; }
+  } else {
+    courses.push({ id: 'co'+Date.now(), name, region, holes });
+  }
+  DB.courses = courses;
+  closeModal('modal-course');
+  renderCourses();
+  toast('球場資料已儲存');
+}
+
+function deleteCourse() {
+  const id = document.getElementById('co-id').value;
+  if (!id) return;
+  DB.courses = DB.courses.filter(c => c.id !== id);
+  closeModal('modal-course');
+  renderCourses();
+  toast('球場已刪除');
+}
+
+// ---- HISTORY ----
+function histTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('hist-rounds').style.display = tab === 'rounds' ? 'block' : 'none';
+  document.getElementById('hist-stats').style.display = tab === 'stats' ? 'block' : 'none';
+  if (tab === 'rounds') renderHistRounds();
+  if (tab === 'stats') renderHistStats();
+}
+
+function renderHistory(tab) {
+  renderHistRounds();
+  document.getElementById('hist-rounds').style.display = 'block';
+  document.getElementById('hist-stats').style.display = 'none';
+}
+
+function renderHistRounds() {
+  const rounds = DB.rounds.slice().reverse();
+  const el = document.getElementById('hist-rounds');
+  if (rounds.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="ei">📊</div><p>尚無賽局紀錄</p></div>`;
+    return;
+  }
+  el.innerHTML = rounds.map(r => `
+    <div class="card" style="cursor:pointer" onclick="showRoundDetail('${r.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:15px;font-weight:700">⛳ ${r.courseName}</div>
+          <div style="font-size:12px;color:var(--muted)">${r.date}・每點 $${r.amount}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">›</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${r.playerNames.map((n,i) => {
+          const pts = r.totals[r.playerIds[i]] || 0;
+          return `<span class="badge ${pts>0?'badge-green':pts<0?'badge-red':'badge-blue'}">${n} ${pts>0?'+':''}${pts}pt</span>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function showRoundDetail(id) {
+  const r = DB.rounds.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('modal-rd-title').innerHTML = `${r.courseName} <span class="modal-close" onclick="closeModal('modal-round-detail')">×</span>`;
+  let html = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">${r.date}・每點 $${r.amount}</div>`;
+  html += '<div class="card" style="margin-bottom:10px">';
+  r.playerNames.forEach((n,i) => {
+    const pts = r.totals[r.playerIds[i]] || 0;
+    const money = pts * r.amount;
+    html += `<div class="summary-row"><span class="label">${n}</span><span class="val ${pts>0?'pos':pts<0?'neg':'neu'}">${pts>0?'+':''}${pts}pt・${money>=0?'+':''}$${money}</span></div>`;
+  });
+  html += '</div>';
+  document.getElementById('modal-rd-content').innerHTML = html;
+  document.getElementById('modal-round-detail').classList.add('open');
+}
+
+function renderHistStats() {
+  const players = DB.players;
+  const rounds = DB.rounds;
+  const el = document.getElementById('hist-stats');
+  if (players.length === 0) { el.innerHTML = `<div class="empty-state"><div class="ei">👤</div><p>尚無球員資料</p></div>`; return; }
+  let html = '';
+  players.forEach((p,pi) => {
+    const myRounds = rounds.filter(r => r.playerIds.includes(p.id));
+    const totalPts = myRounds.reduce((s,r) => s + (r.totals[p.id]||0), 0);
+    const totalMoney = myRounds.reduce((s,r) => s + (r.totals[p.id]||0)*r.amount, 0);
+    const wins = myRounds.filter(r => {
+      const myPts = r.totals[p.id]||0;
+      return Object.values(r.totals).every(v => v <= myPts) && myPts > 0;
+    }).length;
+    html += `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:40px;height:40px;border-radius:50%;background:${PC[pi%4]}22;color:${PC[pi%4]};display:flex;align-items:center;justify-content:center;font-weight:800">${PE[pi%4]}</div>
+          <div><div style="font-size:16px;font-weight:700">${p.name}</div><div style="font-size:12px;color:var(--muted)">${(p.history||[]).length} 場歷史紀錄</div></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="sv">${myRounds.length}</div><div class="sl">場次</div></div>
+          <div class="stat-box"><div class="sv">${wins}</div><div class="sl">最高分次數</div></div>
+          <div class="stat-box"><div class="sv" style="color:${totalPts>=0?'var(--green)':'var(--red)'}">${totalPts>0?'+':''}${totalPts}</div><div class="sl">累積積分</div></div>
+          <div class="stat-box"><div class="sv" style="font-size:16px;color:${totalMoney>=0?'var(--green)':'var(--red)'}">${totalMoney>=0?'+':''}$${totalMoney}</div><div class="sl">累積賭金</div></div>
+        </div>
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ---- INIT ----
+initDB();
+selectedPlayers = [];
+selectedAmount = 50;
+</script>
+</body>
+</html>
